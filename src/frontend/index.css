@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Outfit";
+  src: url("/assets/fonts/Outfit-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    /* Industrial Blue Theme */
+    --background: 0.975 0.008 260;
+    --foreground: 0.18 0.04 265;
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.04 265;
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.04 265;
+    --primary: 0.42 0.19 262;
+    --primary-foreground: 0.98 0.005 260;
+    --secondary: 0.92 0.03 260;
+    --secondary-foreground: 0.35 0.12 262;
+    --muted: 0.94 0.015 260;
+    --muted-foreground: 0.52 0.06 262;
+    --accent: 0.88 0.05 260;
+    --accent-foreground: 0.3 0.1 262;
+    --destructive: 0.57 0.22 27;
+    --destructive-foreground: 0.98 0 0;
+    --border: 0.88 0.02 260;
+    --input: 0.88 0.02 260;
+    --ring: 0.42 0.19 262;
+    /* Status colors */
+    --success: 0.62 0.18 145;
+    --success-foreground: 0.98 0 0;
+    --warning: 0.78 0.18 75;
+    --warning-foreground: 0.2 0.04 70;
+    /* Charts */
+    --chart-1: 0.42 0.19 262;
+    --chart-2: 0.62 0.18 145;
+    --chart-3: 0.78 0.18 75;
+    --chart-4: 0.57 0.22 27;
+    --chart-5: 0.65 0.2 310;
+    /* Sidebar */
+    --sidebar: 0.22 0.07 265;
+    --sidebar-foreground: 0.92 0.02 260;
+    --sidebar-primary: 0.62 0.18 262;
+    --sidebar-primary-foreground: 0.98 0.005 260;
+    --sidebar-accent: 0.32 0.09 265;
+    --sidebar-accent-foreground: 0.92 0.02 260;
+    --sidebar-border: 0.3 0.07 265;
+    --sidebar-ring: 0.5 0.15 262;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .stat-card {
+    @apply bg-card rounded-lg border border-border p-4 shadow-xs;
+  }
+
+  .page-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .form-section {
+    @apply space-y-4;
+  }
+
+  /* Mobile-friendly table */
+  .data-table-wrapper {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
+
+  /* Touch-friendly tap targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
