@@ -4,6 +4,7 @@ import {
   BarChart3,
   CalendarCheck,
   ClipboardList,
+  Database,
   Factory,
   LayoutDashboard,
   LogOut,
@@ -19,6 +20,7 @@ import { seedDemoData } from "./store";
 
 import Attendance from "./pages/Attendance";
 import Dashboard from "./pages/Dashboard";
+import DataManagement from "./pages/DataManagement";
 import Employees from "./pages/Employees";
 import Inventory from "./pages/Inventory";
 import LoginPage from "./pages/LoginPage";
@@ -33,7 +35,8 @@ type Page =
   | "attendance"
   | "production"
   | "reports"
-  | "inventory";
+  | "inventory"
+  | "datamanagement";
 
 const NAV_ITEMS: {
   id: Page;
@@ -83,6 +86,12 @@ const NAV_ITEMS: {
     icon: Package,
     ocid: "nav.inventory.link",
   },
+  {
+    id: "datamanagement",
+    label: "Data Mgmt",
+    icon: Database,
+    ocid: "nav.datamanagement.link",
+  },
 ];
 
 function PageContent({ page }: { page: Page }) {
@@ -101,6 +110,8 @@ function PageContent({ page }: { page: Page }) {
       return <Reports />;
     case "inventory":
       return <Inventory />;
+    case "datamanagement":
+      return <DataManagement />;
   }
 }
 
@@ -364,7 +375,7 @@ export default function App() {
 
         {/* ─── Bottom tab bar (mobile) ─── */}
         <nav className="bottom-nav lg:hidden">
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-8">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
