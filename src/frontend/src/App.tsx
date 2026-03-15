@@ -8,17 +8,19 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Package,
   Settings2,
   Users,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import { useAdminAuth } from "./hooks/useAdminAuth";
 import { seedDemoData } from "./store";
 
 import Attendance from "./pages/Attendance";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
+import Inventory from "./pages/Inventory";
 import LoginPage from "./pages/LoginPage";
 import Operations from "./pages/Operations";
 import ProductionEntry from "./pages/ProductionEntry";
@@ -30,7 +32,8 @@ type Page =
   | "operations"
   | "attendance"
   | "production"
-  | "reports";
+  | "reports"
+  | "inventory";
 
 const NAV_ITEMS: {
   id: Page;
@@ -74,6 +77,12 @@ const NAV_ITEMS: {
     icon: BarChart3,
     ocid: "nav.reports.link",
   },
+  {
+    id: "inventory",
+    label: "Inventory",
+    icon: Package,
+    ocid: "nav.inventory.link",
+  },
 ];
 
 function PageContent({ page }: { page: Page }) {
@@ -90,20 +99,22 @@ function PageContent({ page }: { page: Page }) {
       return <ProductionEntry />;
     case "reports":
       return <Reports />;
+    case "inventory":
+      return <Inventory />;
   }
 }
 
 export default function App() {
-  const { identity, clear, isInitializing } = useInternetIdentity();
+  const { isLoggedIn, isInitializing, login, logout } = useAdminAuth();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Seed demo data on first load
   useEffect(() => {
-    if (identity) {
+    if (isLoggedIn) {
       seedDemoData();
     }
-  }, [identity]);
+  }, [isLoggedIn]);
 
   if (isInitializing) {
     return (
@@ -118,10 +129,10 @@ export default function App() {
     );
   }
 
-  if (!identity) {
+  if (!isLoggedIn) {
     return (
       <>
-        <LoginPage />
+        <LoginPage onLogin={login} />
         <Toaster position="top-center" />
       </>
     );
@@ -164,7 +175,11 @@ export default function App() {
                 }`}
               >
                 <Icon
-                  className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"}`}
+                  className={`w-4 h-4 shrink-0 ${
+                    isActive
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground/50"
+                  }`}
                 />
                 {item.label}
               </button>
@@ -177,7 +192,8 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={clear}
+            data-ocid="sidebar.logout.button"
+            onClick={logout}
             className="w-full justify-start gap-2 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 text-xs"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -246,7 +262,11 @@ export default function App() {
                 }`}
               >
                 <Icon
-                  className={`w-4 h-4 shrink-0 ${isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"}`}
+                  className={`w-4 h-4 shrink-0 ${
+                    isActive
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground/50"
+                  }`}
                 />
                 {item.label}
               </button>
@@ -257,7 +277,8 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={clear}
+            data-ocid="mobile_sidebar.logout.button"
+            onClick={logout}
             className="w-full justify-start gap-2 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 text-xs"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -286,14 +307,15 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className="text-xs text-muted-foreground capitalize">
               {NAV_ITEMS.find((n) => n.id === currentPage)?.label}
             </span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={clear}
+              data-ocid="topbar.logout.button"
+              onClick={logout}
               className="h-8 w-8 p-0 text-muted-foreground"
             >
               <LogOut className="w-4 h-4" />
@@ -308,15 +330,18 @@ export default function App() {
               {NAV_ITEMS.find((n) => n.id === currentPage)?.label}
             </h1>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clear}
-            className="gap-1.5 text-muted-foreground text-xs"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-ocid="topbar_desktop.logout.button"
+              onClick={logout}
+              className="gap-1.5 text-muted-foreground text-xs"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </Button>
+          </div>
         </header>
 
         {/* Page content */}
@@ -339,7 +364,7 @@ export default function App() {
 
         {/* ─── Bottom tab bar (mobile) ─── */}
         <nav className="bottom-nav lg:hidden">
-          <div className="grid grid-cols-6">
+          <div className="grid grid-cols-7">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;

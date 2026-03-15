@@ -59,6 +59,29 @@ export interface DashboardStats {
   currentMonthProductionTotal: number;
 }
 
+export type StockTransactionType = "in" | "out";
+
+export interface InventoryItem {
+  id: string; // INV001, INV002...
+  name: string;
+  category: string;
+  unit: string; // pcs, kg, meters, rolls, etc.
+  currentStock: number;
+  minStock: number; // reorder level
+  unitCost: number; // ₹
+  supplier: string;
+  notes: string;
+}
+
+export interface StockTransaction {
+  id: string; // TXN001...
+  itemId: string;
+  date: string; // YYYY-MM-DD
+  type: StockTransactionType;
+  quantity: number;
+  note: string;
+}
+
 // ─────────────────────────────────────────────
 // Storage keys
 // ─────────────────────────────────────────────
@@ -72,6 +95,10 @@ const KEYS = {
   opCounter: "fpm_op_counter",
   attCounter: "fpm_att_counter",
   prodCounter: "fpm_prod_counter",
+  inventory: "fpm_inventory",
+  stockTxns: "fpm_stock_txns",
+  invCounter: "fpm_inv_counter",
+  txnCounter: "fpm_txn_counter",
 } as const;
 
 // ─────────────────────────────────────────────
@@ -135,6 +162,16 @@ export function updateEmployee(emp: Employee): void {
     employees[idx] = emp;
     setJSON(KEYS.employees, employees);
   }
+}
+
+export function deleteEmployee(id: string): void {
+  const employees = getEmployees().filter((e) => e.id !== id);
+  setJSON(KEYS.employees, employees);
+  // Also remove related attendance and production records
+  const attendances = getAttendances().filter((a) => a.employeeId !== id);
+  setJSON(KEYS.attendances, attendances);
+  const productions = getProductions().filter((p) => p.employeeId !== id);
+  setJSON(KEYS.productions, productions);
 }
 
 // ─────────────────────────────────────────────
@@ -320,6 +357,97 @@ export function getDashboardStats(): DashboardStats {
     todayAttendancePresent: todayPresent,
     todayProductionTotal,
     currentMonthProductionTotal,
+  };
+}
+
+// ─────────────────────────────────────────────
+// Inventory
+// ─────────────────────────────────────────────
+
+export function getInventoryItems(): InventoryItem[] {
+  return getJSON<InventoryItem[]>(KEYS.inventory, []);
+}
+
+export function getInventoryItemById(id: string): InventoryItem | undefined {
+  return getInventoryItems().find((i) => i.id === id);
+}
+
+export function saveInventoryItem(
+  data: Omit<InventoryItem, "id">,
+): InventoryItem {
+  const items = getInventoryItems();
+  const id = nextId(KEYS.invCounter, "INV");
+  const item: InventoryItem = { id, ...data };
+  items.push(item);
+  setJSON(KEYS.inventory, items);
+  return item;
+}
+
+export function updateInventoryItem(item: InventoryItem): void {
+  const items = getInventoryItems();
+  const idx = items.findIndex((i) => i.id === item.id);
+  if (idx !== -1) {
+    items[idx] = item;
+    setJSON(KEYS.inventory, items);
+  }
+}
+
+export function deleteInventoryItem(id: string): void {
+  const items = getInventoryItems().filter((i) => i.id !== id);
+  setJSON(KEYS.inventory, items);
+  const txns = getStockTransactions().filter((t) => t.itemId !== id);
+  setJSON(KEYS.stockTxns, txns);
+}
+
+// ─── Stock Transactions ───
+
+export function getStockTransactions(): StockTransaction[] {
+  return getJSON<StockTransaction[]>(KEYS.stockTxns, []);
+}
+
+export function getStockTransactionsByItem(itemId: string): StockTransaction[] {
+  return getStockTransactions().filter((t) => t.itemId === itemId);
+}
+
+export function addStockTransaction(
+  itemId: string,
+  date: string,
+  type: StockTransactionType,
+  quantity: number,
+  note: string,
+): StockTransaction {
+  const txns = getStockTransactions();
+  const id = nextId(KEYS.txnCounter, "TXN");
+  const txn: StockTransaction = { id, itemId, date, type, quantity, note };
+  txns.push(txn);
+  setJSON(KEYS.stockTxns, txns);
+
+  // Update current stock
+  const items = getInventoryItems();
+  const idx = items.findIndex((i) => i.id === itemId);
+  if (idx !== -1) {
+    if (type === "in") {
+      items[idx].currentStock += quantity;
+    } else {
+      items[idx].currentStock = Math.max(0, items[idx].currentStock - quantity);
+    }
+    setJSON(KEYS.inventory, items);
+  }
+  return txn;
+}
+
+export interface InventoryStats {
+  totalItems: number;
+  lowStockCount: number;
+  totalValue: number;
+}
+
+export function getInventoryStats(): InventoryStats {
+  const items = getInventoryItems();
+  return {
+    totalItems: items.length,
+    lowStockCount: items.filter((i) => i.currentStock <= i.minStock).length,
+    totalValue: items.reduce((s, i) => s + i.currentStock * i.unitCost, 0),
   };
 }
 

@@ -1,10 +1,35 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Factory, Loader2, LogIn } from "lucide-react";
 import { motion } from "motion/react";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { useState } from "react";
 
-export default function LoginPage() {
-  const { login, isLoggingIn, isInitializing } = useInternetIdentity();
+interface LoginPageProps {
+  onLogin: (username: string, password: string) => Promise<boolean>;
+}
+
+export default function LoginPage({ onLogin }: LoginPageProps) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      setError("Please enter your username and password.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    await new Promise((r) => setTimeout(r, 300));
+    const ok = await onLogin(username, password);
+    if (!ok) {
+      setError("Incorrect username or password.");
+    }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[oklch(0.22_0.07_265)] via-[oklch(0.28_0.09_262)] to-[oklch(0.18_0.06_268)] flex items-center justify-center p-4">
@@ -28,7 +53,6 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative z-10 w-full max-w-sm"
       >
-        {/* Card */}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl text-white">
           {/* Logo area */}
           <div className="flex flex-col items-center mb-8">
@@ -43,48 +67,77 @@ export default function LoginPage() {
             <h1 className="text-2xl font-display font-bold text-white">
               Factory Production
             </h1>
-            <p className="text-white/60 text-sm mt-1">Management System</p>
+            <p className="text-white/60 text-sm mt-1">Admin Login</p>
           </div>
 
-          {/* Info */}
-          <div className="bg-white/10 rounded-xl p-4 mb-6 space-y-2">
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              Employee & Attendance Tracking
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-white/80 text-sm">
+                Username
+              </Label>
+              <Input
+                id="username"
+                data-ocid="login.username.input"
+                type="text"
+                autoComplete="username"
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setError("");
+                }}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-white/40 h-11 rounded-xl"
+              />
             </div>
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              Daily Production Entry
-            </div>
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              Salary & Bank Transfer Sheets
-            </div>
-          </div>
 
-          {/* Login Button */}
-          <Button
-            data-ocid="login.button"
-            onClick={login}
-            disabled={isLoggingIn || isInitializing}
-            className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-xl gap-2 touch-target"
-          >
-            {isLoggingIn || isInitializing ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                {isInitializing ? "Loading..." : "Logging in..."}
-              </>
-            ) : (
-              <>
-                <LogIn className="w-5 h-5" />
-                Admin Login
-              </>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-white/80 text-sm">
+                Password
+              </Label>
+              <Input
+                id="password"
+                data-ocid="login.password.input"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-white/40 h-11 rounded-xl"
+              />
+            </div>
+
+            {error && (
+              <p
+                data-ocid="login.error_state"
+                className="text-red-300 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"
+              >
+                {error}
+              </p>
             )}
-          </Button>
 
-          <p className="text-center text-white/40 text-xs mt-4">
-            Secure login via Internet Identity
-          </p>
+            <Button
+              type="submit"
+              data-ocid="login.submit_button"
+              disabled={isLoading}
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-xl gap-2 mt-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Login
+                </>
+              )}
+            </Button>
+          </form>
         </div>
       </motion.div>
     </div>

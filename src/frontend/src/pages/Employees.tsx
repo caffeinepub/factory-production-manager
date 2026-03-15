@@ -16,13 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Search, UserPlus, Users } from "lucide-react";
+import { Pencil, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   type Employee,
   type EmployeeStatus,
   type WorkerType,
+  deleteEmployee,
   getEmployees,
   saveEmployee,
   updateEmployee,
@@ -46,6 +47,7 @@ export default function Employees() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -112,6 +114,14 @@ export default function Employees() {
     value: (typeof EMPTY_FORM)[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    deleteEmployee(deleteTarget.id);
+    toast.success(`${deleteTarget.name} deleted`);
+    setDeleteTarget(null);
+    refresh();
   }
 
   return (
@@ -208,15 +218,26 @@ export default function Employees() {
                     </Badge>
                   </td>
                   <td className="py-3 text-right">
-                    <Button
-                      data-ocid={`employees.edit_button.${idx + 1}`}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(emp)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        data-ocid={`employees.edit_button.${idx + 1}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(emp)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        data-ocid={`employees.delete_button.${idx + 1}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(emp)}
+                        className="h-8 w-8 p-0 text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -224,6 +245,44 @@ export default function Employees() {
           </table>
         </div>
       )}
+
+      {/* Delete Confirm Dialog */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent data-ocid="employees.delete_dialog" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-destructive">
+              Delete Employee
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">
+              {deleteTarget?.name}
+            </span>
+            ? This will also remove their attendance and production records.
+            This action cannot be undone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button
+              data-ocid="employees.delete_cancel_button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              data-ocid="employees.delete_confirm_button"
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

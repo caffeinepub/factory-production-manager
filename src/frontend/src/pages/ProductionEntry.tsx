@@ -251,7 +251,7 @@ export default function ProductionEntryPage() {
           <Label className="text-xs text-muted-foreground mb-2 block">
             STEP 2 — Operations & Quantities
           </Label>
-          <div className="space-y-2">
+          <div className="max-h-56 overflow-y-auto pr-1 space-y-2">
             {rows.map((row, idx) => {
               const rate = getRate(row.operationId);
               const amount = calcAmount(row);
@@ -324,7 +324,7 @@ export default function ProductionEntryPage() {
             variant="outline"
             size="sm"
             onClick={addRow}
-            className="mt-2 gap-1.5 text-xs h-8"
+            className="mt-3 gap-1.5 text-xs h-8"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Row
@@ -374,7 +374,7 @@ export default function ProductionEntryPage() {
             No production entries for this date
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="max-h-96 overflow-y-auto pr-1 space-y-3">
             {groupedEntries.map((group) => (
               <div
                 key={group.employee?.id}

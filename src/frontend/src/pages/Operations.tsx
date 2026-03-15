@@ -8,11 +8,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Plus, Search, Settings2 } from "lucide-react";
+import { Pencil, Plus, Search, Settings2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   type Operation,
+  deleteOperation,
   getOperations,
   saveOperation,
   updateOperation,
@@ -28,6 +29,7 @@ export default function Operations() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Operation | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -50,6 +52,14 @@ export default function Operations() {
     setEditTarget(op);
     setForm({ name: op.name, ratePerPiece: String(op.ratePerPiece) });
     setDialogOpen(true);
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    deleteOperation(deleteTarget.id);
+    toast.success(`${deleteTarget.name} deleted`);
+    setDeleteTarget(null);
+    refresh();
   }
 
   function handleSubmit() {
@@ -148,15 +158,26 @@ export default function Operations() {
                     </span>
                   </td>
                   <td className="py-3 text-right">
-                    <Button
-                      data-ocid={`operations.edit_button.${idx + 1}`}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(op)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        data-ocid={`operations.edit_button.${idx + 1}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(op)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        data-ocid={`operations.delete_button.${idx + 1}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(op)}
+                        className="h-8 w-8 p-0 text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -164,6 +185,46 @@ export default function Operations() {
           </table>
         </div>
       )}
+
+      {/* Delete Confirm Dialog */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent
+          data-ocid="operations.delete_dialog"
+          className="max-w-sm"
+        >
+          <DialogHeader>
+            <DialogTitle className="font-display text-destructive">
+              Delete Operation
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">
+              {deleteTarget?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button
+              data-ocid="operations.delete_cancel_button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              data-ocid="operations.delete_confirm_button"
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
