@@ -20,6 +20,7 @@ import { Pencil, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  type Department,
   type Employee,
   type EmployeeStatus,
   type WorkerType,
@@ -30,6 +31,13 @@ import {
 } from "../store";
 import { formatDate } from "../utils/exportExcel";
 
+const DEPT_COLORS: Record<Department, string> = {
+  "Back Office": "bg-blue-50 text-blue-700 border-blue-200",
+  Production: "bg-amber-50 text-amber-700 border-amber-200",
+  Finishing: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Production & Finishing": "bg-purple-50 text-purple-700 border-purple-200",
+};
+
 const EMPTY_FORM = {
   name: "",
   mobile: "",
@@ -39,6 +47,7 @@ const EMPTY_FORM = {
   ifscCode: "",
   bankName: "",
   status: "Active" as EmployeeStatus,
+  department: "Production" as Department,
 };
 
 export default function Employees() {
@@ -80,6 +89,7 @@ export default function Employees() {
       ifscCode: emp.ifscCode,
       bankName: emp.bankName,
       status: emp.status,
+      department: emp.department ?? "Production",
     });
     setDialogOpen(true);
   }
@@ -169,14 +179,14 @@ export default function Employees() {
         </div>
       ) : (
         <div data-ocid="employees.table" className="data-table-wrapper">
-          <table className="w-full text-sm min-w-[560px]">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
                 <th className="text-left py-2.5 pr-3 font-medium">ID</th>
                 <th className="text-left py-2.5 pr-3 font-medium">Name</th>
                 <th className="text-left py-2.5 pr-3 font-medium">Mobile</th>
+                <th className="text-left py-2.5 pr-3 font-medium">Dept</th>
                 <th className="text-left py-2.5 pr-3 font-medium">Type</th>
-                <th className="text-left py-2.5 pr-3 font-medium">Joined</th>
                 <th className="text-left py-2.5 pr-3 font-medium">Status</th>
                 <th className="text-right py-2.5 font-medium">Action</th>
               </tr>
@@ -196,14 +206,19 @@ export default function Employees() {
                     {emp.mobile}
                   </td>
                   <td className="py-3 pr-3">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${DEPT_COLORS[emp.department ?? "Production"]}`}
+                    >
+                      {emp.department ?? "Production"}
+                    </Badge>
+                  </td>
+                  <td className="py-3 pr-3">
                     <Badge variant="outline" className="text-xs">
                       {emp.workerType === "PieceRate"
                         ? "Piece Rate"
-                        : "Daily Wage"}
+                        : "Fixed Salary"}
                     </Badge>
-                  </td>
-                  <td className="py-3 pr-3 text-muted-foreground text-xs">
-                    {formatDate(emp.joiningDate)}
                   </td>
                   <td className="py-3 pr-3">
                     <Badge
@@ -330,6 +345,26 @@ export default function Employees() {
               </div>
 
               <div>
+                <Label>Department</Label>
+                <Select
+                  value={form.department}
+                  onValueChange={(v) => setField("department", v as Department)}
+                >
+                  <SelectTrigger className="mt-1" data-ocid="employees.select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Back Office">Back Office</SelectItem>
+                    <SelectItem value="Production">Production</SelectItem>
+                    <SelectItem value="Finishing">Finishing</SelectItem>
+                    <SelectItem value="Production & Finishing">
+                      Production &amp; Finishing
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label>Worker Type</Label>
                 <Select
                   value={form.workerType}
@@ -340,12 +375,12 @@ export default function Employees() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PieceRate">Piece Rate</SelectItem>
-                    <SelectItem value="DailyWage">Daily Wage</SelectItem>
+                    <SelectItem value="DailyWage">Fixed Salary</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
+              <div className="col-span-2">
                 <Label>Status</Label>
                 <Select
                   value={form.status}

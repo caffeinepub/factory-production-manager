@@ -2,14 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import {
   BarChart3,
+  Building2,
   CalendarCheck,
   ClipboardList,
-  Database,
   Factory,
   LayoutDashboard,
   LogOut,
   Menu,
   Package,
+  Scissors,
   Settings2,
   Users,
   X,
@@ -20,10 +21,11 @@ import { seedDemoData } from "./store";
 
 import Attendance from "./pages/Attendance";
 import Dashboard from "./pages/Dashboard";
-import DataManagement from "./pages/DataManagement";
 import Employees from "./pages/Employees";
+import FinishingDepartment from "./pages/FinishingDepartment";
 import Inventory from "./pages/Inventory";
 import LoginPage from "./pages/LoginPage";
+import OfficeAttendance from "./pages/OfficeAttendance";
 import Operations from "./pages/Operations";
 import ProductionEntry from "./pages/ProductionEntry";
 import Reports from "./pages/Reports";
@@ -36,7 +38,8 @@ type Page =
   | "production"
   | "reports"
   | "inventory"
-  | "datamanagement";
+  | "officeattendance"
+  | "finishing";
 
 const NAV_ITEMS: {
   id: Page;
@@ -69,10 +72,22 @@ const NAV_ITEMS: {
     ocid: "nav.attendance.link",
   },
   {
+    id: "officeattendance",
+    label: "Office Att",
+    icon: Building2,
+    ocid: "nav.officeattendance.link",
+  },
+  {
     id: "production",
     label: "Production",
     icon: ClipboardList,
     ocid: "nav.production.link",
+  },
+  {
+    id: "finishing",
+    label: "Finishing",
+    icon: Scissors,
+    ocid: "nav.finishing.link",
   },
   {
     id: "reports",
@@ -86,12 +101,6 @@ const NAV_ITEMS: {
     icon: Package,
     ocid: "nav.inventory.link",
   },
-  {
-    id: "datamanagement",
-    label: "Data Mgmt",
-    icon: Database,
-    ocid: "nav.datamanagement.link",
-  },
 ];
 
 function PageContent({ page }: { page: Page }) {
@@ -104,14 +113,16 @@ function PageContent({ page }: { page: Page }) {
       return <Operations />;
     case "attendance":
       return <Attendance />;
+    case "officeattendance":
+      return <OfficeAttendance />;
     case "production":
       return <ProductionEntry />;
+    case "finishing":
+      return <FinishingDepartment />;
     case "reports":
       return <Reports />;
     case "inventory":
       return <Inventory />;
-    case "datamanagement":
-      return <DataManagement />;
   }
 }
 
@@ -375,7 +386,7 @@ export default function App() {
 
         {/* ─── Bottom tab bar (mobile) ─── */}
         <nav className="bottom-nav lg:hidden">
-          <div className="grid grid-cols-8">
+          <div className="grid grid-cols-9">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
@@ -394,7 +405,7 @@ export default function App() {
                   <Icon
                     className={`w-5 h-5 ${isActive ? "text-primary" : ""}`}
                   />
-                  <span className="text-[9px] font-medium leading-tight">
+                  <span className="text-[8px] font-medium leading-tight">
                     {item.label}
                   </span>
                   {isActive && (

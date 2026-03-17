@@ -5,39 +5,53 @@
 export type WorkerType = "PieceRate" | "DailyWage";
 export type EmployeeStatus = "Active" | "Inactive";
 export type AttendanceStatus = "Present" | "Absent" | "HalfDay";
+export type Department =
+  | "Back Office"
+  | "Production"
+  | "Finishing"
+  | "Production & Finishing";
 
 export interface Employee {
-  id: string; // EMP001, EMP002...
+  id: string;
   name: string;
   mobile: string;
-  joiningDate: string; // YYYY-MM-DD
+  joiningDate: string;
   workerType: WorkerType;
   accountNumber: string;
   ifscCode: string;
   bankName: string;
   status: EmployeeStatus;
+  department: Department;
 }
 
 export interface Operation {
-  id: string; // OP001, OP002...
+  id: string;
   name: string;
   ratePerPiece: number;
 }
 
 export interface Attendance {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   employeeId: string;
   status: AttendanceStatus;
 }
 
 export interface ProductionEntry {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   employeeId: string;
   operationId: string;
   quantity: number;
-  amount: number; // quantity * ratePerPiece
+  amount: number;
+}
+
+export interface AdditionalWork {
+  id: string;
+  date: string;
+  employeeId: string;
+  description: string;
+  amount: number;
 }
 
 export interface SalaryRow {
@@ -48,6 +62,7 @@ export interface SalaryRow {
   bankName: string;
   attendanceCount: number;
   productionAmount: number;
+  additionalWorkAmount: number;
   salary: number;
 }
 
@@ -62,21 +77,21 @@ export interface DashboardStats {
 export type StockTransactionType = "in" | "out";
 
 export interface InventoryItem {
-  id: string; // INV001, INV002...
+  id: string;
   name: string;
   category: string;
-  unit: string; // pcs, kg, meters, rolls, etc.
+  unit: string;
   currentStock: number;
-  minStock: number; // reorder level
-  unitCost: number; // ₹
+  minStock: number;
+  unitCost: number;
   supplier: string;
   notes: string;
 }
 
 export interface StockTransaction {
-  id: string; // TXN001...
+  id: string;
   itemId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   type: StockTransactionType;
   quantity: number;
   note: string;
@@ -99,6 +114,8 @@ const KEYS = {
   stockTxns: "fpm_stock_txns",
   invCounter: "fpm_inv_counter",
   txnCounter: "fpm_txn_counter",
+  additionalWork: "fpm_additional_work",
+  addlWorkCounter: "fpm_addl_work_counter",
 } as const;
 
 // ─────────────────────────────────────────────
@@ -146,6 +163,25 @@ export function getEmployeeById(id: string): Employee | undefined {
   return getEmployees().find((e) => e.id === id);
 }
 
+export function getEmployeesByDepartment(dept: Department): Employee[] {
+  const employees = getEmployees();
+  if (dept === "Production") {
+    return employees.filter(
+      (e) =>
+        e.department === "Production" ||
+        e.department === "Production & Finishing",
+    );
+  }
+  if (dept === "Finishing") {
+    return employees.filter(
+      (e) =>
+        e.department === "Finishing" ||
+        e.department === "Production & Finishing",
+    );
+  }
+  return employees.filter((e) => e.department === dept);
+}
+
 export function saveEmployee(data: Omit<Employee, "id">): Employee {
   const employees = getEmployees();
   const id = nextId(KEYS.empCounter, "EMP");
@@ -167,11 +203,14 @@ export function updateEmployee(emp: Employee): void {
 export function deleteEmployee(id: string): void {
   const employees = getEmployees().filter((e) => e.id !== id);
   setJSON(KEYS.employees, employees);
-  // Also remove related attendance and production records
   const attendances = getAttendances().filter((a) => a.employeeId !== id);
   setJSON(KEYS.attendances, attendances);
   const productions = getProductions().filter((p) => p.employeeId !== id);
   setJSON(KEYS.productions, productions);
+  const additionalWorks = getAdditionalWorks().filter(
+    (a) => a.employeeId !== id,
+  );
+  setJSON(KEYS.additionalWork, additionalWorks);
 }
 
 // ─────────────────────────────────────────────
@@ -223,7 +262,7 @@ export function getAttendanceByDate(date: string): Attendance[] {
 
 export function getAttendanceByEmployeeMonth(
   employeeId: string,
-  month: string, // YYYY-MM
+  month: string,
 ): Attendance[] {
   return getAttendances().filter(
     (a) => a.employeeId === employeeId && a.date.startsWith(month),
@@ -291,7 +330,7 @@ export function getProductionByDate(date: string): ProductionEntry[] {
 
 export function getProductionByEmployeeMonth(
   employeeId: string,
-  month: string, // YYYY-MM
+  month: string,
 ): ProductionEntry[] {
   return getProductions().filter(
     (p) => p.employeeId === employeeId && p.date.startsWith(month),
@@ -300,6 +339,46 @@ export function getProductionByEmployeeMonth(
 
 export function getProductionByMonth(month: string): ProductionEntry[] {
   return getProductions().filter((p) => p.date.startsWith(month));
+}
+
+// ─────────────────────────────────────────────
+// Additional Work
+// ─────────────────────────────────────────────
+
+export function getAdditionalWorks(): AdditionalWork[] {
+  return getJSON<AdditionalWork[]>(KEYS.additionalWork, []);
+}
+
+export function getAdditionalWorkByDate(date: string): AdditionalWork[] {
+  return getAdditionalWorks().filter((a) => a.date === date);
+}
+
+export function getAdditionalWorkByEmployeeMonth(
+  employeeId: string,
+  month: string,
+): AdditionalWork[] {
+  return getAdditionalWorks().filter(
+    (a) => a.employeeId === employeeId && a.date.startsWith(month),
+  );
+}
+
+export function addAdditionalWork(
+  date: string,
+  employeeId: string,
+  description: string,
+  amount: number,
+): AdditionalWork {
+  const works = getAdditionalWorks();
+  const id = nextId(KEYS.addlWorkCounter, "AWK");
+  const work: AdditionalWork = { id, date, employeeId, description, amount };
+  works.push(work);
+  setJSON(KEYS.additionalWork, works);
+  return work;
+}
+
+export function deleteAdditionalWork(id: string): void {
+  const works = getAdditionalWorks().filter((a) => a.id !== id);
+  setJSON(KEYS.additionalWork, works);
 }
 
 // ─────────────────────────────────────────────
@@ -315,6 +394,10 @@ export function getMonthlySalarySheet(month: string): SalaryRow[] {
     ).length;
     const productions = getProductionByEmployeeMonth(emp.id, month);
     const productionAmount = productions.reduce((s, p) => s + p.amount, 0);
+    const additionalWorkAmount = getAdditionalWorkByEmployeeMonth(
+      emp.id,
+      month,
+    ).reduce((s, a) => s + a.amount, 0);
     return {
       employeeId: emp.id,
       name: emp.name,
@@ -323,7 +406,8 @@ export function getMonthlySalarySheet(month: string): SalaryRow[] {
       bankName: emp.bankName,
       attendanceCount,
       productionAmount,
-      salary: productionAmount,
+      additionalWorkAmount,
+      salary: productionAmount + additionalWorkAmount,
     };
   });
 }
@@ -399,8 +483,6 @@ export function deleteInventoryItem(id: string): void {
   setJSON(KEYS.stockTxns, txns);
 }
 
-// ─── Stock Transactions ───
-
 export function getStockTransactions(): StockTransaction[] {
   return getJSON<StockTransaction[]>(KEYS.stockTxns, []);
 }
@@ -422,7 +504,6 @@ export function addStockTransaction(
   txns.push(txn);
   setJSON(KEYS.stockTxns, txns);
 
-  // Update current stock
   const items = getInventoryItems();
   const idx = items.findIndex((i) => i.id === itemId);
   if (idx !== -1) {
@@ -456,10 +537,8 @@ export function getInventoryStats(): InventoryStats {
 // ─────────────────────────────────────────────
 
 export function seedDemoData(): void {
-  // Only seed if no data exists
   if (getEmployees().length > 0) return;
 
-  // Seed operations
   const ops = [
     { name: "Collar Join", ratePerPiece: 3 },
     { name: "Sleeve Attach", ratePerPiece: 4 },
@@ -473,8 +552,7 @@ export function seedDemoData(): void {
     savedOps.push(saveOperation(op));
   }
 
-  // Seed employees
-  const employees = [
+  const employees: Omit<Employee, "id">[] = [
     {
       name: "Ravi Kumar",
       mobile: "9876543210",
@@ -484,6 +562,7 @@ export function seedDemoData(): void {
       ifscCode: "SBIN0004567",
       bankName: "State Bank of India",
       status: "Active" as EmployeeStatus,
+      department: "Production" as Department,
     },
     {
       name: "Suresh Patel",
@@ -494,6 +573,7 @@ export function seedDemoData(): void {
       ifscCode: "HDFC0001234",
       bankName: "HDFC Bank",
       status: "Active" as EmployeeStatus,
+      department: "Production & Finishing" as Department,
     },
     {
       name: "Meena Devi",
@@ -504,6 +584,7 @@ export function seedDemoData(): void {
       ifscCode: "ICIC0002345",
       bankName: "ICICI Bank",
       status: "Active" as EmployeeStatus,
+      department: "Finishing" as Department,
     },
     {
       name: "Anjali Singh",
@@ -514,6 +595,7 @@ export function seedDemoData(): void {
       ifscCode: "PUNB0003456",
       bankName: "Punjab National Bank",
       status: "Active" as EmployeeStatus,
+      department: "Back Office" as Department,
     },
     {
       name: "Ramesh Yadav",
@@ -524,6 +606,7 @@ export function seedDemoData(): void {
       ifscCode: "BARB0004567",
       bankName: "Bank of Baroda",
       status: "Active" as EmployeeStatus,
+      department: "Finishing" as Department,
     },
   ];
   const savedEmps: Employee[] = [];
@@ -531,11 +614,9 @@ export function seedDemoData(): void {
     savedEmps.push(saveEmployee(e));
   }
 
-  // Seed some attendance and production for today and this month
   const today = todayStr();
   const month = today.slice(0, 7);
 
-  // Last 5 days attendance
   for (let d = 0; d < 5; d++) {
     const date = new Date();
     date.setDate(date.getDate() - d);
@@ -552,7 +633,6 @@ export function seedDemoData(): void {
     }
   }
 
-  // Seed production entries for this month
   const prodData = [
     { empIdx: 0, opIdx: 0, qty: 120 },
     { empIdx: 0, opIdx: 1, qty: 80 },
@@ -567,12 +647,10 @@ export function seedDemoData(): void {
     { empIdx: 4, opIdx: 3, qty: 95 },
   ];
 
-  // Entries for today
   for (const { empIdx, opIdx, qty } of prodData) {
     addProductionEntry(today, savedEmps[empIdx].id, savedOps[opIdx].id, qty);
   }
 
-  // Entries for earlier this month
   for (let d = 1; d < 8; d++) {
     const date = new Date();
     date.setDate(date.getDate() - d);
